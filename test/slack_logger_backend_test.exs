@@ -31,10 +31,38 @@ defmodule SlackLoggerBackendTest do
     Bypass.expect(bypass, fn conn ->
       assert "/hook" == conn.request_path
       assert "POST" == conn.method
+      {:ok, body, _} = Plug.Conn.read_body(conn)
+
+      assert body ==
+               "{\"attachments\":[{\"pretext\":\"This error should be logged to Slack\",\"fields\":[{\"value\":\"error\",\"title\":\"Level\",\"short\":true},{\"value\":null,\"title\":\"Application\",\"short\":true},{\"value\":\"Elixir.SlackLoggerBackendTest\",\"title\":\"Module\",\"short\":true},{\"value\":\"test posts the error to the Slack incoming webhook/1\",\"title\":\"Function\",\"short\":true},{\"value\":\"/home/hans/work/elixir-utils/slack_logger_backend/test/slack_logger_backend_test.exs\",\"title\":\"File\",\"short\":true},{\"value\":42,\"title\":\"Line\",\"short\":true}],\"fallback\":\"An error level event has occurred: This error should be logged to Slack\"}]}"
+
       Plug.Conn.resp(conn, 200, "ok")
     end)
 
     Logger.error("This error should be logged to Slack")
+    Logger.flush()
+    :timer.sleep(500)
+  end
+
+  test "posts the error to the Slack incoming webhook no meta data", %{bypass: bypass} do
+    Application.put_env(SlackLoggerBackend, :levels, [:error])
+
+    on_exit(fn ->
+      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
+    end)
+
+    Bypass.expect(bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      {:ok, body, _} = Plug.Conn.read_body(conn)
+
+      assert body ==
+               "{\"attachments\":[{\"pretext\":\"This error should be logged to Slack\",\"fallback\":\"An error level event has occurred: This error should be logged to Slack\"}]}"
+
+      Plug.Conn.resp(conn, 200, "ok")
+    end)
+
+    Logger.bare_log(:error, "This error should be logged to Slack")
     Logger.flush()
     :timer.sleep(500)
   end

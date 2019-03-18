@@ -8,40 +8,15 @@ defmodule SlackLoggerBackend.FormatHelper do
   @doc """
   Formats a log event for Slack.
   """
-  def format_event({level, message, module, function, file, line}) do
+  def format_event({level, message, application, module, function, file, line})
+      when is_nil(application) and is_nil(module) and is_nil(function) and is_nil(file) and
+             is_nil(line) do
     {:ok, event} =
       %{
         attachments: [
           %{
             fallback: "An #{level} level event has occurred: #{message}",
-            pretext: message,
-            fields: [
-              %{
-                title: "Level",
-                value: level,
-                short: true
-              },
-              %{
-                title: "Module",
-                value: module,
-                short: true
-              },
-              %{
-                title: "Function",
-                value: function,
-                short: true
-              },
-              %{
-                title: "File",
-                value: file,
-                short: true
-              },
-              %{
-                title: "Line",
-                value: line,
-                short: true
-              }
-            ]
+            pretext: message
           }
         ]
       }
@@ -53,6 +28,7 @@ defmodule SlackLoggerBackend.FormatHelper do
   @doc """
   Formats a log event for Slack.
   """
+
   def format_event({level, message, application, module, function, file, line}) do
     {:ok, event} =
       %{
