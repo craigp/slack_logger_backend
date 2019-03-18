@@ -1,5 +1,4 @@
 defmodule SlackLoggerBackend.Producer do
-
   @moduledoc """
   Produces logger events to be consumed and send to Slack.
   """
@@ -12,7 +11,7 @@ defmodule SlackLoggerBackend.Producer do
 
   @doc false
   def init(:ok) do
-    {:producer, {:queue.new, 0}}
+    {:producer, {:queue.new(), 0}}
   end
 
   @doc false
@@ -41,13 +40,13 @@ defmodule SlackLoggerBackend.Producer do
     case :queue.out(queue) do
       {:empty, queue} ->
         {:noreply, events, {queue, demand}}
+
       {{:value, event}, queue} ->
-        dispatch_events(queue, demand - 1, [event|events])
+        dispatch_events(queue, demand - 1, [event | events])
     end
   end
 
   defp dispatch_events(queue, demand, events) do
     {:noreply, events, {queue, demand}}
   end
-
 end

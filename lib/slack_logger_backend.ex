@@ -1,5 +1,4 @@
 defmodule SlackLoggerBackend do
-
   @moduledoc """
   A logger backend for posting errors to Slack.
 
@@ -58,12 +57,14 @@ defmodule SlackLoggerBackend do
   @doc false
   def start(_type, _args) do
     import Supervisor.Spec, warn: false
+
     children = [
       worker(Producer, []),
       worker(Formatter, [10, 5]),
       worker(Consumer, [10, 5]),
       worker(Pool, [10])
     ]
+
     opts = [strategy: :one_for_one, name: SlackLoggerBackend.Supervisor]
     Supervisor.start_link(children, opts)
   end
@@ -72,5 +73,4 @@ defmodule SlackLoggerBackend do
   def stop(_args) do
     # noop
   end
-
 end

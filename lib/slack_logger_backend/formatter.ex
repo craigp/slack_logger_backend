@@ -1,5 +1,4 @@
 defmodule SlackLoggerBackend.Formatter do
-
   @moduledoc """
   Formats log events into pretty Slack messages.
   """
@@ -30,5 +29,4 @@ defmodule SlackLoggerBackend.Formatter do
   def format_event({url, event}) do
     {url, FormatHelper.format_event(event)}
   end
-
 end

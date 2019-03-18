@@ -1,5 +1,4 @@
 defmodule SlackLoggerBackend.PoolWorker do
-
   @moduledoc """
   A message pool worker.
   """
@@ -25,9 +24,8 @@ defmodule SlackLoggerBackend.PoolWorker do
   @doc """
   Gets a message.
   """
-  @spec post(pid, String.t, String.t) :: atom
+  @spec post(pid, String.t(), String.t()) :: atom
   def post(pid, url, json) do
     GenServer.call(pid, {:post, url, json}, :infinity)
   end
-
 end
