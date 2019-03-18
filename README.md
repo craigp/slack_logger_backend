@@ -39,7 +39,7 @@ config :logger, backends: [SlackLoggerBackend.Logger, :console]
 You can set the log levels you want posted to slack in the config:
 
 ```elixir
-config SlackLoggerBackend, :levels, [:debug, :info, :warn, :error]
+config :slack_backend_logger, :levels, [:debug, :info, :warn, :error]
 ```
 
 Alternatively, do both in one step:
@@ -53,7 +53,7 @@ You'll need to create a custom incoming webhook URL for your Slack team. You can
 in your config:
 
 ```elixir
-config SlackLoggerBackend, :slack, [url: "http://example.com"]
+config :slack_backend_logger, :slack, [url: "http://example.com"]
 ```
 
 ... or you can put the webhook URL in the `SLACK_LOGGER_WEBHOOK_URL` environment variable if you prefer. If

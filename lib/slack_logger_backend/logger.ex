@@ -69,22 +69,15 @@ defmodule SlackLoggerBackend.Logger do
     end
   end
 
-  defp handle_event(level, message, [pid: _, application: application, module: module, function: function, file: file, line: line]) do
-    {level, message, application, module, function, file, line}
-    |> send_event
-  end
+  defp handle_event(level, message, meta) do
+    application = Keyword.get(meta, :application)
+    module = Keyword.get(meta, :module)
+    function = Keyword.get(meta, :function)
+    file = Keyword.get(meta, :file)
+    line = Keyword.get(meta, :line)
 
-  defp handle_event(level, message, [pid: pid, request_id: _request_id, application: application, module: module, function: function, file: file, line: line]) do
-    handle_event(level, message, [pid: pid, application: application, module: module, function: function, file: file, line: line])
-  end
-
-  defp handle_event(level, message, [pid: _, module: module, function: function, file: file, line: line]) do
     {level, message, module, function, file, line}
     |> send_event
-  end
-
-  defp handle_event(_, _, _) do
-    :noop
   end
 
   defp send_event(event) do
