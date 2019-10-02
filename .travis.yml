@@ -1,4 +1,5 @@
 language: elixir
+dist: bionic
 env:
 - MIX_ENV=test
 elixir:
