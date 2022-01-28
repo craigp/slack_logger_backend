@@ -3,7 +3,7 @@ defmodule SlackLoggerBackend.Pool do
   @moduledoc """
   A pool of workers for sending messages to Slack.
   """
-
+  use GenStage
   alias SlackLoggerBackend.PoolWorker
 
   @doc false
@@ -25,6 +25,10 @@ defmodule SlackLoggerBackend.Pool do
     ]
 
     Supervisor.start_link(children, options)
+  end
+
+  def init(:ok) do
+    {:consumer, :the_state_does_not_matter}
   end
 
   @doc """

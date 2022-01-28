@@ -7,7 +7,7 @@ defmodule SlackLoggerBackend.Consumer do
   alias SlackLoggerBackend.{Formatter, Pool}
 
   @doc false
-  def start_link(max_demand, min_demand) do
+  def start_link([max_demand, min_demand]) do
     GenStage.start_link(__MODULE__, {max_demand, min_demand}, name: __MODULE__)
   end
 
