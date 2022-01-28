@@ -8,7 +8,6 @@ defmodule SlackLoggerBackendTest do
     bypass = Bypass.open()
     url = "http://localhost:#{bypass.port}/hook"
     Application.put_env(SlackLoggerBackend, :slack, url: url)
-    System.put_env("SLACK_LOGGER_WEBHOOK_URL", url)
     {:ok, _} = Logger.add_backend(SlackLoggerBackend.Logger, flush: true)
     Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
     SlackLoggerBackend.start(nil, nil)
@@ -18,7 +17,7 @@ defmodule SlackLoggerBackendTest do
       SlackLoggerBackend.stop(nil)
     end)
 
-    {:ok, %{bypass: bypass}}
+    {:ok, %{bypass: bypass, url: url}}
   end
 
   test "posts the error to the Slack incoming webhook", %{bypass: bypass} do
@@ -53,6 +52,25 @@ defmodule SlackLoggerBackendTest do
     Bypass.pass(bypass)
 
     Logger.error("This error should not be logged to Slack")
+    Logger.flush()
+    :timer.sleep(100)
+  end
+
+  test "environment variable overrides config", %{bypass: bypass, url: url} do
+    Application.put_env(SlackLoggerBackend, :levels, [:error])
+    System.put_env("SLACK_LOGGER_WEBHOOK_URL", url <> "1")
+
+    on_exit(fn ->
+      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
+    end)
+
+    Bypass.expect(bypass, fn conn ->
+      assert "/hook1" == conn.request_path
+      assert "POST" == conn.method
+      Plug.Conn.resp(conn, 200, "ok")
+    end)
+
+    Logger.error("This error should be logged to Slack")
     Logger.flush()
     :timer.sleep(100)
   end
