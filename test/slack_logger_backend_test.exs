@@ -73,5 +73,6 @@ defmodule SlackLoggerBackendTest do
     Logger.error("This error should be logged to Slack")
     Logger.flush()
     :timer.sleep(100)
+    System.delete_env("SLACK_LOGGER_WEBHOOK_URL")
   end
 end
