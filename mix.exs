@@ -20,19 +20,19 @@ defmodule SlackLoggerBackend.Mixfile do
     [applications: [:logger, :httpoison, :gen_stage], mod: {SlackLoggerBackend, []}]
   end
 
-  defp deps do
+  def deps do
     [
       {:gen_stage, "~> 1.1"},
       {:httpoison, "~> 1.8"},
       {:poison, "~> 5.0"},
       {:poolboy, "~> 1.5.1"},
-      {:excoveralls, "~> 0.14", only: :test},
+      {:credo, "~> 1.6", only: :dev},
+      {:dialyxir, "~> 0.4", only: :dev},
       {:earmark, "~> 1.4", only: :dev},
       {:ex_doc, "~> 0.28", only: :dev},
-      {:dialyxir, "~> 0.4", only: :dev},
       {:bypass, "~> 2.1", only: :test},
-      {:inch_ex, "~> 2.0", only: :docs},
-      {:credo, "~> 1.6", only: :dev}
+      {:excoveralls, "~> 0.14", only: :test},
+      {:inch_ex, "~> 2.0", only: :docs}
     ]
   end
 
