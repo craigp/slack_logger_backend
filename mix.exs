@@ -6,7 +6,6 @@ defmodule SlackLoggerBackend.Mixfile do
       app: :slack_logger_backend,
       description: "A logger backend for posting errors to Slack.",
       version: "0.2.0",
-      elixir: "~> 1.13",
       build_embedded: Mix.env() == :prod,
       start_permanent: Mix.env() == :prod,
       deps: deps(),
@@ -26,12 +25,18 @@ defmodule SlackLoggerBackend.Mixfile do
       {:httpoison, "~> 1.8"},
       {:poison, "~> 5.0"},
       {:poolboy, "~> 1.5.1"},
+
+      # dev
       {:credo, "~> 1.6", only: :dev},
       {:dialyxir, "~> 0.4", only: :dev},
       {:earmark, "~> 1.4", only: :dev},
       {:ex_doc, "~> 0.28", only: :dev},
+
+      # test
       {:bypass, "~> 2.1", only: :test},
       {:excoveralls, "~> 0.14", only: :test},
+
+      # docs
       {:inch_ex, "~> 2.0", only: :docs}
     ]
   end

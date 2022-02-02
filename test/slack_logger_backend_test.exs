@@ -58,14 +58,14 @@ defmodule SlackLoggerBackendTest do
 
   test "environment variable overrides config", %{bypass: bypass, url: url} do
     Application.put_env(SlackLoggerBackend, :levels, [:error])
-    System.put_env("SLACK_LOGGER_WEBHOOK_URL", url <> "1")
+    System.put_env("SLACK_LOGGER_WEBHOOK_URL", url <> "_use_environment_variable")
 
     on_exit(fn ->
       Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
     end)
 
     Bypass.expect(bypass, fn conn ->
-      assert "/hook1" == conn.request_path
+      assert "/hook_use_environment_variable" == conn.request_path
       assert "POST" == conn.method
       Plug.Conn.resp(conn, 200, "ok")
     end)
