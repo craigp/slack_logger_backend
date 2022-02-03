@@ -31,8 +31,8 @@ defmodule SlackLoggerBackend.Consumer do
     {:noreply, [], state}
   end
 
-  defp process_events([{url, json} | events], state) do
-    Pool.post(url, json)
+  defp process_events([json | events], state) do
+    Pool.post(json)
     process_events(events, state)
   end
 end

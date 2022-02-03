@@ -5,6 +5,8 @@ defmodule SlackLoggerBackend.Pool do
   use Supervisor
   alias SlackLoggerBackend.PoolWorker
 
+  @env_webhook "SLACK_LOGGER_WEBHOOK_URL"
+
   @doc false
   def start_link(pool_size) do
     Supervisor.start_link(__MODULE__, pool_size, name: __MODULE__)
@@ -33,14 +35,21 @@ defmodule SlackLoggerBackend.Pool do
   @doc """
   Gets a message.
   """
-  @spec post(String.t(), String.t()) :: atom
-  def post(url, json) do
+  @spec post(String.t()) :: atom
+  def post(json) do
     :poolboy.transaction(
       :message_pool,
       fn pid ->
-        PoolWorker.post(pid, url, json)
+        PoolWorker.post(pid, get_url(), json)
       end,
       :infinity
     )
+  end
+
+  defp get_url() do
+    case System.get_env(@env_webhook) do
+      nil -> Application.get_env(:slack_logger_backend, :slack_webhook, nil)
+      url -> url
+    end
   end
 end

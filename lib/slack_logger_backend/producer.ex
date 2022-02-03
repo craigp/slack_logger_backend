@@ -72,7 +72,8 @@ defmodule SlackLoggerBackend.Producer do
           count = Map.get(state.event_map, event)
           event_map = Map.delete(state.event_map, event)
           state = %{state | demand: demand - 1, queue: queue, event_map: event_map}
-          dispatch_events(state, [{count, event} | events])
+          event = Map.put(event, :count, count)
+          dispatch_events(state, [event | events])
         else
           {:noreply, events, state}
         end

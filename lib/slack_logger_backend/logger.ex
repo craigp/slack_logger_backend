@@ -5,7 +5,6 @@ defmodule SlackLoggerBackend.Logger do
 
   alias SlackLoggerBackend.Producer
 
-  @env_webhook "SLACK_LOGGER_WEBHOOK_URL"
   @default_log_levels [:error]
 
   @doc false
@@ -60,37 +59,17 @@ defmodule SlackLoggerBackend.Logger do
     {:ok, state}
   end
 
-  defp get_url do
-    case System.get_env(@env_webhook) do
-      nil -> get_env(:slack_webhook)
-      url -> url
-    end
-  end
-
   defp do_handle_event(level, message, detail) when is_list(detail) do
-    detail_map = Enum.into(detail, %{})
-    do_handle_event(level, message, detail_map)
-  end
-
-  defp do_handle_event(level, message, %{
-         application: application,
-         module: module,
-         function: function,
-         file: file,
-         line: line
-       }) do
-    {level, message, application, module, function, file, line}
-    |> send_event
-  end
-
-  defp do_handle_event(level, message, %{
-         module: module,
-         function: function,
-         file: file,
-         line: line
-       }) do
-    {level, message, module, function, file, line}
-    |> send_event
+    detail
+    |> Keyword.take([
+      :application,
+      :module,
+      :function,
+      :file,
+      :line
+    ])
+    |> Enum.into(%{level: level, message: message})
+    |> send_event()
   end
 
   defp do_handle_event(_level, _message, _detail) do
@@ -98,7 +77,7 @@ defmodule SlackLoggerBackend.Logger do
   end
 
   defp send_event(event) do
-    Producer.add_event({get_url(), event})
+    Producer.add_event(event)
   end
 
   defp get_env(key, default \\ nil) do

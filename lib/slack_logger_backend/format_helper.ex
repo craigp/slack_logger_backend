@@ -8,105 +8,45 @@ defmodule SlackLoggerBackend.FormatHelper do
   @doc """
   Formats a log event for Slack.
   """
-  def format_event(count, {level, message, module, function, file, line}) do
-    {:ok, event} =
+  def format_event(detail) do
+    fields = [
+      field("Module", detail.module),
+      field("Function", detail.function),
+      field("File", detail.file),
+      field("Line", detail.line),
+      field("Count", detail.count)
+    ]
+
+    fields =
+      if Map.has_key?(detail, :application) do
+        [
+          field("Level", detail.level),
+          field("Application", detail.application) | fields
+        ]
+      else
+        [field("Level", detail.level) | fields]
+      end
+
+    {:ok, json} =
       %{
         attachments: [
           %{
-            fallback: "An #{level} level event has occurred: #{message}",
-            pretext: message,
-            fields: [
-              %{
-                title: "Level",
-                value: level,
-                short: true
-              },
-              %{
-                title: "Module",
-                value: module,
-                short: true
-              },
-              %{
-                title: "Function",
-                value: function,
-                short: true
-              },
-              %{
-                title: "File",
-                value: file,
-                short: true
-              },
-              %{
-                title: "Line",
-                value: line,
-                short: true
-              },
-              %{
-                title: "Count",
-                value: count,
-                short: true
-              }
-            ]
+            fallback: "An #{detail.level} level event has occurred: #{detail.message}",
+            pretext: detail.message,
+            fields: fields
           }
         ]
       }
       |> encode
 
-    event
+    json
   end
 
-  @doc """
-  Formats a log event for Slack.
-  """
-  def format_event(count, {level, message, application, module, function, file, line}) do
-    {:ok, event} =
-      %{
-        attachments: [
-          %{
-            fallback: "An #{level} level event has occurred: #{message}",
-            pretext: message,
-            fields: [
-              %{
-                title: "Level",
-                value: level,
-                short: true
-              },
-              %{
-                title: "Application",
-                value: application,
-                short: true
-              },
-              %{
-                title: "Module",
-                value: module,
-                short: true
-              },
-              %{
-                title: "Function",
-                value: function,
-                short: true
-              },
-              %{
-                title: "File",
-                value: file,
-                short: true
-              },
-              %{
-                title: "Line",
-                value: line,
-                short: true
-              },
-              %{
-                title: "Count",
-                value: count,
-                short: true
-              }
-            ]
-          }
-        ]
-      }
-      |> encode
-
-    event
+  defp field(title, value) do
+    %{
+      title: title,
+      value: value,
+      short: true
+    }
   end
 end
