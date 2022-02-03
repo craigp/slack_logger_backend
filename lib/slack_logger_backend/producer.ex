@@ -22,9 +22,8 @@ defmodule SlackLoggerBackend.Producer do
 
   @doc false
   def handle_cast({:add, event}, state) do
-    time = System.monotonic_time(:second)
-
     debounce = Application.get_env(:slack_logger_backend, :debounce_seconds, nil)
+    time = System.monotonic_time(:second)
 
     state =
       if Map.has_key?(state.event_map, event) do

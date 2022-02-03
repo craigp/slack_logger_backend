@@ -8,8 +8,7 @@ defmodule SlackLoggerBackendTest do
     bypass = Bypass.open()
     url = "http://localhost:#{bypass.port}/hook"
     Application.put_env(SlackLoggerBackend, :slack, url: url)
-    Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
-    SlackLoggerBackend.start(nil, nil)
+    Application.put_env(SlackLoggerBackend, :levels, [:warn, :error])
 
     on_exit(fn ->
       Logger.remove_backend(SlackLoggerBackend.Logger, flush: true)
@@ -19,12 +18,13 @@ defmodule SlackLoggerBackendTest do
     {:ok, %{bypass: bypass, url: url}}
   end
 
-  test "posts the error to the Slack incoming webhook", %{bypass: bypass} do
-    Application.put_env(SlackLoggerBackend, :levels, [:error])
+  defp start() do
+    {:ok, _} = Logger.add_backend(SlackLoggerBackend.Logger, flush: true)
+    SlackLoggerBackend.start(nil, nil)
+  end
 
-    on_exit(fn ->
-      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
-    end)
+  test "posts the error to the Slack incoming webhook", %{bypass: bypass} do
+    start()
 
     Bypass.expect(bypass, fn conn ->
       assert "/hook" == conn.request_path
@@ -38,30 +38,23 @@ defmodule SlackLoggerBackendTest do
   end
 
   test "doesn't post a debug message to Slack if the level is not set", %{bypass: bypass} do
-    Application.put_env(SlackLoggerBackend, :levels, [:info])
-
-    on_exit(fn ->
-      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
-    end)
+    start()
 
     Bypass.expect(bypass, fn _conn ->
       flunk("Slack should not have been notified")
     end)
 
-    Bypass.pass(bypass)
-
-    Logger.error("This error should not be logged to Slack")
+    Logger.debug("This message should not be logged to Slack")
+    # TODO: this test should fail!
+    Logger.error("This message should not be logged to Slack")
     Logger.flush()
     :timer.sleep(100)
+    Bypass.pass(bypass)
   end
 
   test "environment variable overrides config", %{bypass: bypass, url: url} do
-    Application.put_env(SlackLoggerBackend, :levels, [:error])
     System.put_env("SLACK_LOGGER_WEBHOOK_URL", url <> "_use_environment_variable")
-
-    on_exit(fn ->
-      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
-    end)
+    start()
 
     Bypass.expect(bypass, fn conn ->
       assert "/hook_use_environment_variable" == conn.request_path
@@ -76,12 +69,8 @@ defmodule SlackLoggerBackendTest do
   end
 
   test "debounce prevents deplicate messages from being sent", %{bypass: bypass} do
-    Application.put_env(SlackLoggerBackend, :levels, [:error])
     Application.put_env(:slack_logger_backend, :debounce_seconds, 1)
-
-    on_exit(fn ->
-      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
-    end)
+    start()
 
     Bypass.expect_once(bypass, fn conn ->
       assert "/hook" == conn.request_path
