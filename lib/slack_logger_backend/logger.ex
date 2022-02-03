@@ -62,11 +62,8 @@ defmodule SlackLoggerBackend.Logger do
 
   defp get_url do
     case System.get_env(@env_webhook) do
-      nil ->
-        get_env(:slack)[:url]
-
-      url ->
-        url
+      nil -> get_env(:slack_webhook)
+      url -> url
     end
   end
 
@@ -105,10 +102,6 @@ defmodule SlackLoggerBackend.Logger do
   end
 
   defp get_env(key, default \\ nil) do
-    Application.get_env(
-      SlackLoggerBackend,
-      key,
-      Application.get_env(:slack_logger_backend, key, default)
-    )
+    Application.get_env(:slack_logger_backend, key, default)
   end
 end

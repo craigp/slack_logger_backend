@@ -7,8 +7,8 @@ defmodule SlackLoggerBackendTest do
   setup do
     bypass = Bypass.open()
     url = "http://localhost:#{bypass.port}/hook"
-    Application.put_env(SlackLoggerBackend, :slack, url: url)
-    Application.put_env(SlackLoggerBackend, :levels, [:warn, :error])
+    Application.put_env(:slack_logger_backend, :slack_webhook, url)
+    Application.put_env(:slack_logger_backend, :levels, [:warn, :error])
 
     on_exit(fn ->
       Logger.remove_backend(SlackLoggerBackend.Logger, flush: true)
