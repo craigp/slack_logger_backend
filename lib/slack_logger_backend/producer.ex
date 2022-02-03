@@ -13,7 +13,6 @@ defmodule SlackLoggerBackend.Producer do
   def init(:ok) do
     debounce = Application.get_env(:slack_logger_backend, :debounce_seconds, nil)
 
-    # {:producer, {:queue.new(), 0}}
     state = %{
       event_map: %{},
       debounce: debounce,
@@ -23,16 +22,6 @@ defmodule SlackLoggerBackend.Producer do
 
     {:producer, state}
   end
-
-  # @doc false
-  # def handle_cast({:add, event}, {queue, demand}) when demand > 0 do
-  #   {:noreply, [event], {queue, demand - 1}}
-  # end
-
-  # @doc false
-  # def handle_cast({:add, event}, {queue, demand}) do
-  #   {:noreply, [], {:queue.in(event, queue), demand}}
-  # end
 
   @doc false
   def handle_cast({:add, event}, state) do
