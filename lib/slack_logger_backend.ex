@@ -33,9 +33,16 @@ defmodule SlackLoggerBackend do
   config :slack_logger_backend, :slack, [url: "http://example.com"]
   ```
 
-  ... or you can put the webhook URL in the `SLACK_LOGGER_WEBHOOK_URL`
-  environment variable if you prefer. If you have both the environment variable
-  will be preferred.
+  You can also put the webhook URL in the `SLACK_LOGGER_WEBHOOK_URL` environment variable. If
+  you have both the environment variable will take proirity.
+
+  If you want to prevent the same message from being spammed in the slack channel you can set a
+  debounce, which will send the message with a count of the number of occurances of the message
+  within the debounce period:
+
+  ```
+  config :slack_logger_backend, debounce_seconds: 300
+  ```
   """
 
   use Application
