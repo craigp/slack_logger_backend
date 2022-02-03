@@ -27,8 +27,7 @@ defmodule SlackLoggerBackend.Formatter do
   @doc """
   Formats a log event for Slack.
   """
-  def format_event({url, event}) do
-    {url, FormatHelper.format_event(event)}
+  def format_event({count, {url, event}}) do
+    {url, FormatHelper.format_event(count, event)}
   end
-
 end
