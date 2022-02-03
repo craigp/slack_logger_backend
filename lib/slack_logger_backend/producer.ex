@@ -11,11 +11,8 @@ defmodule SlackLoggerBackend.Producer do
 
   @doc false
   def init(:ok) do
-    debounce = Application.get_env(:slack_logger_backend, :debounce_seconds, nil)
-
     state = %{
       event_map: %{},
-      debounce: debounce,
       demand: 0,
       queue: :queue.new()
     }
@@ -27,6 +24,8 @@ defmodule SlackLoggerBackend.Producer do
   def handle_cast({:add, event}, state) do
     time = System.monotonic_time(:second)
 
+    debounce = Application.get_env(:slack_logger_backend, :debounce_seconds, nil)
+
     state =
       if Map.has_key?(state.event_map, event) do
         # handle duplicate event
@@ -35,11 +34,19 @@ defmodule SlackLoggerBackend.Producer do
         %{state | event_map: event_map}
       else
         # handle new event
-        queue = :queue.in({time, event}, state.queue)
+        unless is_nil(debounce) do
+          Process.send_after(self(), :dispatch_events, debounce * 1000 + 1)
+        end
+
+        queue = :queue.in({time, debounce, event}, state.queue)
         event_map = Map.put(state.event_map, event, 1)
         %{state | event_map: event_map, queue: queue}
       end
 
+    dispatch_events(state, [])
+  end
+
+  def handle_info(:dispatch_events, state) do
     dispatch_events(state, [])
   end
 
@@ -61,8 +68,8 @@ defmodule SlackLoggerBackend.Producer do
       {:empty, _queue} ->
         {:noreply, events, state}
 
-      {{:value, {time, event}}, queue} ->
-        if is_nil(state.debounce) or state.debounce > System.monotonic_time(:second) - time do
+      {{:value, {time, debounce, event}}, queue} ->
+        if is_nil(debounce) or debounce <= System.monotonic_time(:second) - time do
           count = Map.get(state.event_map, event)
           event_map = Map.delete(state.event_map, event)
           state = %{state | demand: demand - 1, queue: queue, event_map: event_map}

@@ -8,7 +8,6 @@ defmodule SlackLoggerBackendTest do
     bypass = Bypass.open()
     url = "http://localhost:#{bypass.port}/hook"
     Application.put_env(SlackLoggerBackend, :slack, url: url)
-    {:ok, _} = Logger.add_backend(SlackLoggerBackend.Logger, flush: true)
     Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
     SlackLoggerBackend.start(nil, nil)
 
@@ -74,5 +73,27 @@ defmodule SlackLoggerBackendTest do
     Logger.flush()
     :timer.sleep(100)
     System.delete_env("SLACK_LOGGER_WEBHOOK_URL")
+  end
+
+  test "debounce prevents deplicate messages from being sent", %{bypass: bypass} do
+    Application.put_env(SlackLoggerBackend, :levels, [:error])
+    Application.put_env(:slack_logger_backend, :debounce_seconds, 1)
+
+    on_exit(fn ->
+      Application.put_env(SlackLoggerBackend, :levels, [:debug, :info, :warn, :error])
+    end)
+
+    Bypass.expect_once(bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      Plug.Conn.resp(conn, 200, "ok")
+    end)
+
+    for _ <- 0..1, do: Logger.error("This error should be logged to Slack only once")
+
+    :timer.sleep(1100)
+    Logger.flush()
+
+    Application.delete_env(:slack_logger_backend, :debounce_seconds)
   end
 end
