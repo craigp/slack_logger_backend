@@ -21,12 +21,14 @@ defmodule SlackLoggerBackend.FormatHelper do
       ]
       |> Enum.reject(&is_nil/1)
 
+    message = messge_to_string(detail.message)
+
     {:ok, json} =
       %{
         attachments: [
           %{
-            fallback: "An #{detail.level} level event has occurred: #{detail.message}",
-            pretext: detail.message,
+            fallback: "An #{detail.level} level event has occurred: #{message}",
+            pretext: message,
             fields: fields
           }
         ]
@@ -48,5 +50,25 @@ defmodule SlackLoggerBackend.FormatHelper do
           short: true
         }
     end
+  end
+
+  defp messge_to_string(a) when is_binary(a) do
+    a
+  end
+
+  defp messge_to_string([a]) do
+    messge_to_string(a)
+  end
+
+  defp messge_to_string(["\nState: " | _]) do
+    ""
+  end
+
+  defp messge_to_string([a | b]) do
+    messge_to_string([messge_to_string(a) <> messge_to_string(b)])
+  end
+
+  defp messge_to_string(a) do
+    inspect(a)
   end
 end
