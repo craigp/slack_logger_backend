@@ -9,23 +9,17 @@ defmodule SlackLoggerBackend.FormatHelper do
   Formats a log event for Slack.
   """
   def format_event(detail) do
-    fields = [
-      field("Module", detail.module),
-      field("Function", detail.function),
-      field("File", detail.file),
-      field("Line", detail.line),
-      field("Count", detail.count)
-    ]
-
     fields =
-      if Map.has_key?(detail, :application) do
-        [
-          field("Level", detail.level),
-          field("Application", detail.application) | fields
-        ]
-      else
-        [field("Level", detail.level) | fields]
-      end
+      [
+        field("Level", detail, :level),
+        field("Application", detail, :application),
+        field("Module", detail, :module),
+        field("Function", detail, :function),
+        field("File", detail, :file),
+        field("Line", detail, :line),
+        field("Count", detail, :count)
+      ]
+      |> Enum.reject(&is_nil/1)
 
     {:ok, json} =
       %{
@@ -42,11 +36,17 @@ defmodule SlackLoggerBackend.FormatHelper do
     json
   end
 
-  defp field(title, value) do
-    %{
-      title: title,
-      value: value,
-      short: true
-    }
+  defp field(title, map, key) do
+    case map[key] do
+      nil ->
+        nil
+
+      value ->
+        %{
+          title: title,
+          value: value,
+          short: true
+        }
+    end
   end
 end
