@@ -9,9 +9,12 @@ defmodule SlackLoggerBackend.FormatHelper do
   Formats a log event for Slack.
   """
   def format_event(detail) do
+    deployment = System.get_env("SLACK_LOGGER_DEPLOYMENT_NAME")
+
     fields =
       [
         field("Level", detail, :level),
+        field("Deployment", deployment),
         field("Application", detail, :application),
         field("Module", detail, :module),
         field("Function", detail, :function),
@@ -38,18 +41,15 @@ defmodule SlackLoggerBackend.FormatHelper do
     json
   end
 
-  defp field(title, map, key) do
-    case map[key] do
-      nil ->
-        nil
+  defp field(title, map, key), do: field(title, map[key])
+  defp field(_, nil), do: nil
 
-      value ->
-        %{
-          title: title,
-          value: value,
-          short: true
-        }
-    end
+  defp field(title, value) do
+    %{
+      title: title,
+      value: value,
+      short: true
+    }
   end
 
   defp messge_to_string(a) when is_binary(a) do
