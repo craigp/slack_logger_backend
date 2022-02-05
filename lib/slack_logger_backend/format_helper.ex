@@ -9,12 +9,10 @@ defmodule SlackLoggerBackend.FormatHelper do
   Formats a log event for Slack.
   """
   def format_event(detail) do
-    deployment = System.get_env("SLACK_LOGGER_DEPLOYMENT_NAME")
-
     fields =
       [
         field("Level", detail, :level),
-        field("Deployment", deployment),
+        field("Deployment", deployment()),
         field("Application", detail, :application),
         field("Module", detail, :module),
         field("Function", detail, :function),
@@ -39,6 +37,16 @@ defmodule SlackLoggerBackend.FormatHelper do
       |> encode
 
     json
+  end
+
+  defp deployment() do
+    System.get_env(
+      "SLACK_LOGGER_DEPLOYMENT_NAME",
+      Application.get_env(
+        :slack_logger_backend,
+        :deployment_name
+      )
+    )
   end
 
   defp field(title, map, key), do: field(title, map[key])
