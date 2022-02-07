@@ -37,11 +37,4 @@ defmodule SlackLoggerBackend.PoolWorker do
       url -> url
     end
   end
-
-  defimpl Inspect, for: HTTPoison.Response do
-    def inspect(response, opts) do
-      %{response | headers: "--redacted--", request_url: "--redacted--", request: "--redacted--"}
-      |> Inspect.Any.inspect(opts)
-    end
-  end
 end
