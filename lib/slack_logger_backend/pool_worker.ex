@@ -40,17 +40,7 @@ defmodule SlackLoggerBackend.PoolWorker do
 
   defimpl Inspect, for: HTTPoison.Response do
     def inspect(response, opts) do
-      {:current_stacktrace, stacktrace} = Process.info(self(), :current_stacktrace)
-
-      # check if PoolWorker is in the stack trace
-      stacktrace
-      |> Enum.any?(fn call -> elem(call, 0) == SlackLoggerBackend.PoolWorker end)
-      |> if do
-        # hide the webhook if it is
-        %{response | request_url: "--hidden--", request: "--hidden--"}
-      else
-        response
-      end
+      %{response | headers: "--redacted--", request_url: "--redacted--", request: "--redacted--"}
       |> Inspect.Any.inspect(opts)
     end
   end
