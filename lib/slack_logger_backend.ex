@@ -34,7 +34,7 @@ defmodule SlackLoggerBackend do
   ```
 
   You can also put the webhook URL in the `SLACK_LOGGER_WEBHOOK_URL` environment variable. If
-  you have both the environment variable will take proirity.
+  you have both the environment variable will take priority.
 
   If you want to prevent the same message from being spammed in the slack channel you can set a
   debounce, which will send the message with a count of the number of occurances of the message
@@ -42,6 +42,15 @@ defmodule SlackLoggerBackend do
 
   ```
   config :slack_logger_backend, debounce_seconds: 300
+  ```
+
+  An optional field labeled "Deployment" is availiable in the Slack messages. This is useful if you
+  have multiple deployments send messages to the same Slack thread. This value can be set in
+  config (see below) or using the environment variable `SLACK_LOGGER_DEPLOYMENT_NAME`. The
+  environment variable will take priority.
+
+  ```
+  config :slack_logger_backend, deployment_name: "example deployment",
   ```
   """
 
