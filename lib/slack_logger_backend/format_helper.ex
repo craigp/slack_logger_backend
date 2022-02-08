@@ -3,8 +3,6 @@ defmodule SlackLoggerBackend.FormatHelper do
   Simple formatter for Slack messages.
   """
 
-  import Poison, only: [encode: 1]
-
   @doc """
   Formats a log event for Slack.
   """
@@ -22,7 +20,12 @@ defmodule SlackLoggerBackend.FormatHelper do
       ]
       |> Enum.reject(&is_nil/1)
 
-    message = messge_to_string(detail.message)
+    scrubber = Application.get_env(:slack_logger_backend, :scrubber)
+
+    message =
+      detail.message
+      |> messge_to_string()
+      |> scrub(scrubber)
 
     {:ok, json} =
       %{
@@ -34,7 +37,7 @@ defmodule SlackLoggerBackend.FormatHelper do
           }
         ]
       }
-      |> encode
+      |> Poison.encode()
 
     json
   end
@@ -48,6 +51,14 @@ defmodule SlackLoggerBackend.FormatHelper do
       )
     )
   end
+
+  defp scrub(message, nil), do: message
+
+  defp scrub(message, {regex, substitution}),
+    do: String.replace(message, regex, substitution, global: true)
+
+  defp scrub(message, regex),
+    do: String.replace(message, regex, "--redacted--", global: true)
 
   defp field(title, map, key), do: field(title, map[key])
   defp field(_, nil), do: nil

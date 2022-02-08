@@ -2,7 +2,7 @@ ExUnit.start()
 
 defmodule SlackLoggerBackend.PoolWorkerTest do
   use ExUnit.Case
-  alias SlackLoggerBackend.{PoolWorker}
+  alias SlackLoggerBackend.PoolWorker
 
   setup do
     bypass = Bypass.open()
