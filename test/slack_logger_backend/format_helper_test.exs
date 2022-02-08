@@ -4,15 +4,20 @@ defmodule SlackLoggerBackend.FormatHelperTest do
   use ExUnit.Case
 
   test "scrubber redacts secrets" do
-    scrubber = {~r/(password: \")(.+)(\")/, "\\1--redadacted--\\3"}
+    scrubber = {~r/(password|token|secret)(:+\s\")(.+?)(\")/, "\\1\\2--redacted--\\4"}
     Application.put_env(:slack_logger_backend, :scrubber, scrubber)
 
     message =
-      %{level: "error", message: "username: \"user\",  password: \"password\""}
+      %{
+        level: "error",
+        message:
+          "username: \"user\", password: \"password\", token: \"token\", client_secret: \"secret\""
+      }
       |> FormatHelper.format_event()
       |> get_message()
 
-    assert message == "username: \"user\",  password: \"--redadacted--\""
+    assert message ==
+             "username: \"user\", password: \"--redacted--\", token: \"--redacted--\", client_secret: \"--redacted--\""
   end
 
   defp get_message(message) do
