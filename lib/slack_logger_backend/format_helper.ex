@@ -37,7 +37,7 @@ defmodule SlackLoggerBackend.FormatHelper do
           }
         ]
       }
-      |> Poison.encode()
+      |> Jason.encode()
 
     json
   end

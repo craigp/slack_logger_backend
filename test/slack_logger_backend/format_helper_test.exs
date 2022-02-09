@@ -22,7 +22,7 @@ defmodule SlackLoggerBackend.FormatHelperTest do
 
   defp get_message(message) do
     message
-    |> Poison.decode()
+    |> Jason.decode()
     |> elem(1)
     |> Map.get("attachments")
     |> List.first()

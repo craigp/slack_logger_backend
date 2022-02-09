@@ -23,7 +23,7 @@ defmodule SlackLoggerBackend.Mixfile do
     [
       {:gen_stage, "~> 1.1"},
       {:httpoison, "~> 1.8"},
-      {:poison, "~> 5.0"},
+      {:jason, "~> 1.3"},
       {:poolboy, "~> 1.5.1"},
 
       # dev
