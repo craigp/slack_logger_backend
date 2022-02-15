@@ -16,7 +16,7 @@ defmodule SlackLoggerBackend.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison, :gen_stage], mod: {SlackLoggerBackend, []}]
+    [extra_applications: [:logger], mod: {SlackLoggerBackend, []}]
   end
 
   def deps do

@@ -79,10 +79,6 @@ defmodule SlackLoggerBackend.FormatHelper do
     messge_to_string(a)
   end
 
-  defp messge_to_string(["\nState: " | _]) do
-    ""
-  end
-
   defp messge_to_string([a | b]) do
     messge_to_string([messge_to_string(a) <> messge_to_string(b)])
   end
