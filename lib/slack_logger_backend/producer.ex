@@ -4,6 +4,16 @@ defmodule SlackLoggerBackend.Producer do
   """
   use GenStage
 
+  @event_fields [
+    :message,
+    :level,
+    :application,
+    :module,
+    :function,
+    :file,
+    :line
+  ]
+
   @doc false
   def start_link([]) do
     GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
@@ -22,6 +32,7 @@ defmodule SlackLoggerBackend.Producer do
 
   @doc false
   def handle_cast({:add, event}, state) do
+    event = Map.take(event, @event_fields)
     debounce = Application.get_env(:slack_logger_backend, :debounce_seconds, nil)
     time = System.monotonic_time(:second)
 

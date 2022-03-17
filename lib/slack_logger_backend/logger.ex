@@ -4,6 +4,7 @@ defmodule SlackLoggerBackend.Logger do
   """
 
   alias SlackLoggerBackend.Producer
+  alias SlackLoggerBackend.FormatHelper
 
   @default_log_levels [:error]
 
@@ -77,7 +78,16 @@ defmodule SlackLoggerBackend.Logger do
   end
 
   defp send_event(event) do
-    Producer.add_event(event)
+    scrubber = get_env(:scrubber)
+
+    message =
+      event.message
+      |> to_string()
+      |> FormatHelper.scrub(scrubber)
+
+    event
+    |> Map.put(:message, message)
+    |> Producer.add_event()
   end
 
   defp get_env(key, default \\ nil) do

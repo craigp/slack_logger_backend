@@ -20,19 +20,12 @@ defmodule SlackLoggerBackend.FormatHelper do
       ]
       |> Enum.reject(&is_nil/1)
 
-    scrubber = Application.get_env(:slack_logger_backend, :scrubber)
-
-    message =
-      detail.message
-      |> messge_to_string()
-      |> scrub(scrubber)
-
     {:ok, json} =
       %{
         attachments: [
           %{
-            fallback: "An #{detail.level} level event has occurred: #{message}",
-            pretext: message,
+            fallback: "An #{detail.level} level event has occurred: #{detail.message}",
+            pretext: detail.message,
             fields: fields
           }
         ]
@@ -52,14 +45,6 @@ defmodule SlackLoggerBackend.FormatHelper do
     )
   end
 
-  defp scrub(message, nil), do: message
-
-  defp scrub(message, {regex, substitution}),
-    do: String.replace(message, regex, substitution, global: true)
-
-  defp scrub(message, regex),
-    do: String.replace(message, regex, "--redacted--", global: true)
-
   defp field(title, map, key), do: field(title, map[key])
   defp field(_, nil), do: nil
 
@@ -71,19 +56,15 @@ defmodule SlackLoggerBackend.FormatHelper do
     }
   end
 
-  defp messge_to_string(a) when is_binary(a) do
-    a
-  end
+  def scrub(message, nil), do: message
+  def scrub(message, []), do: message
 
-  defp messge_to_string([a]) do
-    messge_to_string(a)
-  end
+  def scrub(message, [scrubber | scrubbers]),
+    do: message |> scrub(scrubber) |> scrub(scrubbers)
 
-  defp messge_to_string([a | b]) do
-    messge_to_string([messge_to_string(a) <> messge_to_string(b)])
-  end
+  def scrub(message, {regex, substitution}),
+    do: String.replace(message, regex, substitution, global: true)
 
-  defp messge_to_string(a) do
-    inspect(a)
-  end
+  def scrub(message, regex),
+    do: String.replace(message, regex, "--redacted--", global: true)
 end
