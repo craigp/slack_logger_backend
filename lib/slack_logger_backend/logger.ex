@@ -9,58 +9,44 @@ defmodule SlackLoggerBackend.Logger do
   @default_log_levels [:error]
 
   @doc false
-  def init(__MODULE__) do
-    {:ok, %{levels: []}}
-  end
+  def init(__MODULE__), do: do_init([])
+  def init({__MODULE__, level}) when is_atom(level), do: do_init([level])
+  def init({__MODULE__, levels}) when is_list(levels), do: do_init(levels)
 
-  def init({__MODULE__, levels}) when is_atom(levels) do
-    {:ok, %{levels: [levels]}}
-  end
-
-  def init({__MODULE__, levels}) when is_list(levels) do
-    {:ok, %{levels: levels}}
-  end
-
-  @doc false
-  def handle_call(_request, state) do
-    {:ok, state}
-  end
-
-  @doc false
-  def handle_event({level, _pid, {_, message, _timestamp, detail}}, %{levels: []} = state) do
+  defp do_init(levels) do
     levels =
-      case get_env(:levels) do
-        nil -> @default_log_levels
+      case levels do
+        [] -> get_env(:levels, @default_log_levels)
         levels -> levels
       end
 
-    if level in levels do
-      do_handle_event(level, message, detail)
-    end
+    ignore =
+      get_env(:ignore, [])
+      |> Enum.map(&String.replace(&1, ~r/\s+/, " "))
 
-    {:ok, %{state | levels: levels}}
+    opts = [ignore: ignore]
+    {:ok, %{levels: levels, opts: opts}}
   end
+
+  @doc false
+  def handle_call(_request, state), do: {:ok, state}
+
+  @doc false
+  def handle_info(_message, state), do: {:ok, state}
+
+  @doc false
+  def handle_event(:flush, state), do: {:ok, state}
 
   @doc false
   def handle_event({level, _pid, {_, message, _timestamp, detail}}, %{levels: levels} = state) do
     if level in levels do
-      do_handle_event(level, message, detail)
+      do_handle_event(level, message, detail, state.opts)
     end
 
     {:ok, state}
   end
 
-  @doc false
-  def handle_event(:flush, state) do
-    {:ok, state}
-  end
-
-  @doc false
-  def handle_info(_message, state) do
-    {:ok, state}
-  end
-
-  defp do_handle_event(level, message, detail) when is_list(detail) do
+  defp do_handle_event(level, message, detail, opts) when is_list(detail) do
     detail
     |> Keyword.take([
       :application,
@@ -70,24 +56,30 @@ defmodule SlackLoggerBackend.Logger do
       :line
     ])
     |> Enum.into(%{level: level, message: message})
-    |> send_event()
+    |> send_event(opts)
   end
 
-  defp do_handle_event(_level, _message, _detail) do
+  defp do_handle_event(_level, _message, _detail, _opts) do
     :noop
   end
 
-  defp send_event(event) do
+  defp send_event(event, opts) do
     scrubber = get_env(:scrubber)
+    ignore_list = opts[:ignore] || []
 
     message =
       event.message
       |> to_string()
       |> FormatHelper.scrub(scrubber)
+      |> String.trim()
 
-    event
-    |> Map.put(:message, message)
-    |> Producer.add_event()
+    compare_message = String.replace(message, ~r/\s+/, " ")
+
+    unless Enum.member?(ignore_list, compare_message) do
+      event
+      |> Map.put(:message, message)
+      |> Producer.add_event()
+    end
   end
 
   defp get_env(key, default \\ nil) do
