@@ -39,7 +39,9 @@ defmodule SlackLoggerBackend.Logger do
 
   @doc false
   def handle_event({level, _pid, {_, message, _timestamp, detail}}, %{levels: levels} = state) do
-    if level in levels do
+    app = detail[:application]
+
+    if level in levels and app != :slack_logger_backend do
       do_handle_event(level, message, detail, state.opts)
     end
 

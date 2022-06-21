@@ -4,6 +4,7 @@ defmodule SlackLoggerBackend.Consumer do
   """
   use GenStage
   alias SlackLoggerBackend.{Formatter, Pool}
+  require Logger
 
   @doc false
   def start_link([max_demand, min_demand]) do
@@ -32,7 +33,13 @@ defmodule SlackLoggerBackend.Consumer do
   end
 
   defp process_events([json | events], state) do
-    Pool.post(json)
+    try do
+      Pool.post(json)
+    rescue
+      _ ->
+        Logger.error("slack_logger_backend could not send event: #{json}")
+    end
+
     process_events(events, state)
   end
 end
