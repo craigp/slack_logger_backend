@@ -20,11 +20,15 @@ defmodule SlackLoggerBackend.Logger do
         levels -> levels
       end
 
-    ignore =
-      get_env(:ignore, [])
-      |> Enum.map(&String.replace(&1, ~r/\s+/, " "))
+    {ignore_messages, ignore_events} = Enum.split_with(get_env(:ignore, []), &is_binary/1)
 
-    opts = [ignore: ignore]
+    ignore_messages = Enum.map(ignore_messages, &String.replace(&1, ~r/\s+/, " "))
+
+    opts = [
+      ignore_messages: ignore_messages,
+      ignore_events: ignore_events
+    ]
+
     {:ok, %{levels: levels, opts: opts}}
   end
 
@@ -67,7 +71,6 @@ defmodule SlackLoggerBackend.Logger do
 
   defp send_event(event, opts) do
     scrubber = get_env(:scrubber)
-    ignore_list = opts[:ignore] || []
 
     message =
       event.message
@@ -75,13 +78,27 @@ defmodule SlackLoggerBackend.Logger do
       |> FormatHelper.scrub(scrubber)
       |> String.trim()
 
-    compare_message = String.replace(message, ~r/\s+/, " ")
-
-    unless Enum.member?(ignore_list, compare_message) do
+    unless should_ignore(event, message, opts) do
       event
       |> Map.put(:message, message)
       |> Producer.add_event()
     end
+  end
+
+  defp should_ignore(event, message, opts) do
+    ignore_messages = opts[:ignore_messages]
+    ignore_events = opts[:ignore_events]
+    compare_message = String.replace(message, ~r/\s+/, " ")
+
+    # ignore if any ignore entry matches
+    ignore_event =
+      Enum.any?(
+        ignore_events,
+        # only ignore if all keywords in ignore entry match
+        &Enum.all?(&1, fn {key, value} -> event[key] == value end)
+      )
+
+    ignore_event or Enum.member?(ignore_messages, compare_message)
   end
 
   defp get_env(key, default \\ nil) do

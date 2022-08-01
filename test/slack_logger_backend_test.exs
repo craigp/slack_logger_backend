@@ -78,7 +78,7 @@ defmodule SlackLoggerBackendTest do
     Application.delete_env(:slack_logger_backend, :debounce_seconds)
   end
 
-  test "ignores errors in the ignore list", %{bypass: bypass} do
+  test "ignores error messages in the ignore list", %{bypass: bypass} do
     msg1 = "I don't want to see this"
     msg2 = "I    also don't want to see this"
     msg3 = "But I do want to see this"
@@ -101,6 +101,38 @@ defmodule SlackLoggerBackendTest do
     """)
 
     Logger.error(msg3)
+
+    Logger.flush()
+    :timer.sleep(100)
+  end
+
+  defmodule IgnoredModule do
+    def send_error(error) do
+      Logger.error(error)
+    end
+  end
+
+  test "ignores error events in the ignore list, key-value list", %{bypass: bypass} do
+    ignore = [
+      [module: IgnoredModule],
+      [function: "send_error/1"]
+    ]
+
+    Application.put_env(:slack_logger_backend, :ignore, ignore)
+    start()
+
+    Bypass.expect_once(bypass, fn conn ->
+      assert "/hook" == conn.request_path
+      assert "POST" == conn.method
+      Plug.Conn.resp(conn, 200, "ok")
+    end)
+
+    msg1 = "I don't want to see this"
+    msg2 = "But I do want to see this"
+
+    IgnoredModule.send_error(msg1)
+
+    Logger.error(msg2)
 
     Logger.flush()
     :timer.sleep(100)
