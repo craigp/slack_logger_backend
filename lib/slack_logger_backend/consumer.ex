@@ -1,20 +1,19 @@
 defmodule SlackLoggerBackend.Consumer do
-
   @moduledoc """
   Consumes logger events and pushes them onto the worker pool to send to Slack.
   """
   use GenStage
   alias SlackLoggerBackend.{Formatter, Pool}
+  require Logger
 
   @doc false
-  def start_link(max_demand, min_demand) do
+  def start_link([max_demand, min_demand]) do
     GenStage.start_link(__MODULE__, {max_demand, min_demand}, name: __MODULE__)
   end
 
   @doc false
   def init({max_demand, min_demand}) do
-    {:consumer, %{},
-     subscribe_to: [{Formatter, max_demand: max_demand, min_demand: min_demand}]}
+    {:consumer, %{}, subscribe_to: [{Formatter, max_demand: max_demand, min_demand: min_demand}]}
   end
 
   @doc false
@@ -33,9 +32,14 @@ defmodule SlackLoggerBackend.Consumer do
     {:noreply, [], state}
   end
 
-  defp process_events([{url, json}|events], state) do
-    Pool.post(url, json)
+  defp process_events([json | events], state) do
+    try do
+      Pool.post(json)
+    rescue
+      _ ->
+        Logger.error("slack_logger_backend could not send event: #{json}")
+    end
+
     process_events(events, state)
   end
-
 end

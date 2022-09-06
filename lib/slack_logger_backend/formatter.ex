@@ -1,5 +1,4 @@
 defmodule SlackLoggerBackend.Formatter do
-
   @moduledoc """
   Formats log events into pretty Slack messages.
   """
@@ -8,7 +7,7 @@ defmodule SlackLoggerBackend.Formatter do
   alias SlackLoggerBackend.{Producer, FormatHelper}
 
   @doc false
-  def start_link(max_demand, min_demand) do
+  def start_link([max_demand, min_demand]) do
     GenStage.start_link(__MODULE__, {max_demand, min_demand}, name: __MODULE__)
   end
 
@@ -27,8 +26,7 @@ defmodule SlackLoggerBackend.Formatter do
   @doc """
   Formats a log event for Slack.
   """
-  def format_event({url, event}) do
-    {url, FormatHelper.format_event(event)}
+  def format_event(event) do
+    FormatHelper.format_event(event)
   end
-
 end

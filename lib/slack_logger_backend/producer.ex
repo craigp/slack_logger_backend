@@ -1,33 +1,69 @@
 defmodule SlackLoggerBackend.Producer do
-
   @moduledoc """
   Produces logger events to be consumed and send to Slack.
   """
   use GenStage
 
+  @event_fields [
+    :message,
+    :level,
+    :application,
+    :module,
+    :function,
+    :file,
+    :line
+  ]
+
   @doc false
-  def start_link do
+  def start_link([]) do
     GenStage.start_link(__MODULE__, :ok, name: __MODULE__)
   end
 
   @doc false
   def init(:ok) do
-    {:producer, {:queue.new, 0}}
+    state = %{
+      event_map: %{},
+      demand: 0,
+      queue: :queue.new()
+    }
+
+    {:producer, state}
   end
 
   @doc false
-  def handle_cast({:add, event}, {queue, demand}) when demand > 0 do
-    {:noreply, [event], {queue, demand - 1}}
+  def handle_cast({:add, event}, state) do
+    event = Map.take(event, @event_fields)
+    debounce = Application.get_env(:slack_logger_backend, :debounce_seconds, nil)
+    time = System.monotonic_time(:second)
+
+    state =
+      if Map.has_key?(state.event_map, event) do
+        # handle duplicate event
+        count = Map.get(state.event_map, event)
+        event_map = Map.put(state.event_map, event, count + 1)
+        %{state | event_map: event_map}
+      else
+        # handle new event
+        unless is_nil(debounce) do
+          Process.send_after(self(), :dispatch_events, debounce * 1000 + 1)
+        end
+
+        queue = :queue.in({time, debounce, event}, state.queue)
+        event_map = Map.put(state.event_map, event, 1)
+        %{state | event_map: event_map, queue: queue}
+      end
+
+    dispatch_events(state, [])
+  end
+
+  def handle_info(:dispatch_events, state) do
+    dispatch_events(state, [])
   end
 
   @doc false
-  def handle_cast({:add, event}, {queue, demand}) do
-    {:noreply, [], {:queue.in(event, queue), demand}}
-  end
-
-  @doc false
-  def handle_demand(incoming_demand, {queue, demand}) when incoming_demand > 0 do
-    dispatch_events(queue, incoming_demand + demand, [])
+  def handle_demand(incoming_demand, state = %{demand: demand}) when incoming_demand > 0 do
+    state = %{state | demand: incoming_demand + demand}
+    dispatch_events(state, [])
   end
 
   @doc """
@@ -37,17 +73,25 @@ defmodule SlackLoggerBackend.Producer do
     GenStage.cast(__MODULE__, {:add, event})
   end
 
-  defp dispatch_events(queue, demand, events) when demand > 0 do
-    case :queue.out(queue) do
-      {:empty, queue} ->
-        {:noreply, events, {queue, demand}}
-      {{:value, event}, queue} ->
-        dispatch_events(queue, demand - 1, [event|events])
+  defp dispatch_events(state = %{demand: demand}, events) when demand > 0 do
+    case :queue.out(state.queue) do
+      {:empty, _queue} ->
+        {:noreply, events, state}
+
+      {{:value, {time, debounce, event}}, queue} ->
+        if is_nil(debounce) or debounce <= System.monotonic_time(:second) - time do
+          count = Map.get(state.event_map, event)
+          event_map = Map.delete(state.event_map, event)
+          state = %{state | demand: demand - 1, queue: queue, event_map: event_map}
+          event = Map.put(event, :count, count)
+          dispatch_events(state, [event | events])
+        else
+          {:noreply, events, state}
+        end
     end
   end
 
-  defp dispatch_events(queue, demand, events) do
-    {:noreply, events, {queue, demand}}
+  defp dispatch_events(state, events) do
+    {:noreply, events, state}
   end
-
 end

@@ -16,7 +16,7 @@ First, add the client to your `mix.exs` dependencies:
 
 ```elixir
 def deps do
-  [{:slack_logger_backend, "~> 0.0.1"}]
+  [{:slack_logger_backend, "~> 0.2.0"}]
 end
 ```
 
@@ -30,32 +30,35 @@ def application do
 end
 ```
 
-Finally, add `SlackLoggerBackend.Logger` to your list of logging backends in your app's config:
+Add `SlackLoggerBackend.Logger` to your list of logging backends in your app's config:
 
 ```elixir
-config :logger, backends: [SlackLoggerBackend.Logger, :console]
-```
-
-You can set the log levels you want posted to slack in the config:
-
-```elixir
-config SlackLoggerBackend, :levels, [:debug, :info, :warn, :error]
-```
-
-Alternatively, do both in one step:
-
-```elixir
-config :logger, backends: [{SlackLoggerBackend.Logger, :error}]
-config :logger, backends: [{SlackLoggerBackend.Logger, [:info, error]}]
+config :logger, backends: [:console, {SlackLoggerBackend.Logger, :error}]
 ```
 
 You'll need to create a custom incoming webhook URL for your Slack team. You can either configure the webhook
 in your config:
 
 ```elixir
-config SlackLoggerBackend, :slack, [url: "http://example.com"]
+config :slack_logger_backend, slack_webhook: "http://example.com"
 ```
 
-... or you can put the webhook URL in the `SLACK_LOGGER_WEBHOOK_URL` environment variable if you prefer. If
-you have both the environment variable will be preferred.
+You can also put the webhook URL in the `SLACK_LOGGER_WEBHOOK_URL` environment variable. If
+you have both the environment variable will take priority.
 
+If you want to prevent the same message from being spammed in the slack channel you can set a 
+debounce, which will send the message with a count of the number of occurances of the message 
+within the debounce period:
+
+```
+config :slack_logger_backend, debounce_seconds: 300
+```
+
+An optional field labeled "Deployment" is availiable in the Slack messages. This is useful if you 
+have multiple deployments send messages to the same Slack thread. This value can be set in
+config (see below) or using the environment variable `SLACK_LOGGER_DEPLOYMENT_NAME`. The 
+environment variable will take priority.
+
+```
+config :slack_logger_backend, deployment_name: "example deployment",
+```
