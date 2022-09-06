@@ -19,8 +19,14 @@ defmodule SlackLoggerBackend.PoolWorker do
 
   @doc false
   def handle_call({:post, json}, _from, worker_state) do
-    result = HTTPoison.post(get_url(), json)
-    {:reply, result, worker_state}
+    url = get_url()
+
+    if is_binary(url) do
+      result = HTTPoison.post(url, json)
+      {:reply, result, worker_state}
+    else
+      {:reply, :no_url, worker_state}
+    end
   end
 
   @doc """
